@@ -37,6 +37,7 @@ struct Cacher<F, K, V>
 
 impl<F, K, V> Cacher<F, K, V>
 where
+    V: Copy,
     F: Fn(&K) -> V,
     K: Hash + Eq,
 {
@@ -47,14 +48,13 @@ where
         }
     }
 
-    fn value(&mut self, arg: K) -> &V {
-        use std::collections::hash_map::Entry;
-
-        match self.cache.entry(arg) {
-            Entry::Occupied(occupied) => occupied.into_mut(),
-            Entry::Vacant(vacant) => {
-                let value = (self.calculation)(vacant.key());
-                vacant.insert(value)
+    fn value(&mut self, arg: K) -> V {
+        match self.cache.get(&arg) {
+            Some(v) => *v,
+            None => {
+                let v = (self.calculation)(&arg);
+                self.cache.insert(arg, v);
+                v
             }
         }
     }
